@@ -57,4 +57,57 @@ nick@nick-virtual-machine:~/riscv64-ucore-labcodes/lab1$
 
 ### 5.拓展练习三：完善异常中断
 
+**代码实现**：
+
+```C
+case CAUSE_ILLEGAL_INSTRUCTION:
+            cprintf("Exception type:Illegal instruction\n");
+            cprintf("Illegal instruction caught at 0x%08x\n", tf->epc);
+            tf->epc += 4;
+            //print_regs(&tf->epc);
+            break;
+        case CAUSE_BREAKPOINT:
+            cprintf("Exception type: breakpoint\n");
+            cprintf("ebreak caught at 0x%08x\n", tf->epc);
+            tf->epc += 4;
+            //print_regs(&tf->epc);
+            break;
+```
+
 异常指令的地址一定是和寄存器中存储的值有关系的
+
+**代码说明：**
+
+```
+            //断点异常处理
+            /* LAB1 CHALLLENGE3   YOUR CODE :  */
+            /*(1)输出指令异常类型（ breakpoint）
+             *(2)输出异常指令地址
+             *(3)更新 tf->epc寄存器
+            */
+```
+
+实验验证结果：
+
+```
+sbi_emulate_csr_read: hartid0: invalid csr_num=0x302
+Exception type:Illegal instruction
+Illegal instruction caught at 0x80200050
+Exception type: breakpoint
+ebreak caught at 0x80200054
+100 ticks
+100 ticks
+100 ticks
+100 ticks
+100 ticks
+100 ticks
+100 ticks
+100 ticks
+100 ticks
+100 ticks
+```
+
+至此，时钟中断，interrupt中断以及break中断都已经实现
+
+---
+

@@ -48,6 +48,7 @@ static void init_memmap(struct Page *base, size_t n) {
 // memory
 struct Page *alloc_pages(size_t n) {
     struct Page *page = NULL;
+    
     bool intr_flag;
     local_intr_save(intr_flag);
     {

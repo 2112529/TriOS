@@ -2434,8 +2434,8 @@ static inline bool __intr_save(void) {
 ffffffffc020139c:	100027f3          	csrr	a5,sstatus
 ffffffffc02013a0:	8b89                	andi	a5,a5,2
 ffffffffc02013a2:	eb89                	bnez	a5,ffffffffc02013b4 <alloc_pages+0x18>
-struct Page *alloc_pages(size_t n) {
     struct Page *page = NULL;
+    
     bool intr_flag;
     local_intr_save(intr_flag);
     {
@@ -2742,14 +2742,14 @@ ffffffffc02015ca:	b769                	j	ffffffffc0201554 <pmm_init+0xee>
     uintptr_t freemem = PADDR((uintptr_t)pages + sizeof(struct Page) * (npage - nbase));
 ffffffffc02015cc:	00001617          	auipc	a2,0x1
 ffffffffc02015d0:	18460613          	addi	a2,a2,388 # ffffffffc0202750 <default_pmm_manager+0xb0>
-ffffffffc02015d4:	06e00593          	li	a1,110
+ffffffffc02015d4:	06f00593          	li	a1,111
 ffffffffc02015d8:	00001517          	auipc	a0,0x1
 ffffffffc02015dc:	1a050513          	addi	a0,a0,416 # ffffffffc0202778 <default_pmm_manager+0xd8>
 ffffffffc02015e0:	dcdfe0ef          	jal	ra,ffffffffc02003ac <__panic>
     satp_physical = PADDR(satp_virtual);
 ffffffffc02015e4:	00001617          	auipc	a2,0x1
 ffffffffc02015e8:	16c60613          	addi	a2,a2,364 # ffffffffc0202750 <default_pmm_manager+0xb0>
-ffffffffc02015ec:	08900593          	li	a1,137
+ffffffffc02015ec:	08a00593          	li	a1,138
 ffffffffc02015f0:	00001517          	auipc	a0,0x1
 ffffffffc02015f4:	18850513          	addi	a0,a0,392 # ffffffffc0202778 <default_pmm_manager+0xd8>
 ffffffffc02015f8:	db5fe0ef          	jal	ra,ffffffffc02003ac <__panic>

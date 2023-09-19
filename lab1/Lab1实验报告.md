@@ -6,7 +6,7 @@
 
 ### 2.练习二：完善中断处理
 
-#### （1）编程实现代码：
+**编程实现代码：**
 
 ```C
 case IRQ_S_TIMER:
@@ -87,7 +87,7 @@ case CAUSE_ILLEGAL_INSTRUCTION:
             */
 ```
 
-实验验证结果：
+**实验验证结果：**
 
 ```
 sbi_emulate_csr_read: hartid0: invalid csr_num=0x302
@@ -108,6 +108,21 @@ ebreak caught at 0x80200054
 ```
 
 至此，时钟中断，interrupt中断以及break中断都已经实现
+
+**实验评分展示**
+
+![image-20230919233307287](lab1/output.png)
+
+如图所示，，输出的结果为：
+
+```
+nick@nick-virtual-machine:~/riscv64-ucore-labcodes/lab1$ make grade
+gmake[1]: Entering directory '/home/nick/riscv64-ucore-labcodes/lab1' + cc kern/init/entry.S + cc kern/init/init.c + cc kern/libs/stdio.c + cc kern/debug/kdebug.c + cc kern/debug/kmonitor.c + cc kern/debug/panic.c + cc kern/driver/clock.c + cc kern/driver/console.c + cc kern/driver/intr.c + cc kern/trap/trap.c + cc kern/trap/trapentry.S + cc kern/mm/pmm.c + cc libs/printfmt.c + cc libs/readline.c + cc libs/sbi.c + cc libs/string.c + ld bin/kernel riscv64-unknown-elf-objcopy bin/kernel --strip-all -O binary bin/ucore.img gmake[1]: Leaving directory '/home/nick/riscv64-ucore-labcodes/lab1'
+try to run qemu
+qemu pid=3923
+  -100 ticks:                                OK
+Total Score: 100/100
+```
 
 ---
 

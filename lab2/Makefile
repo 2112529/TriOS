@@ -233,3 +233,6 @@ tags:
 	$(V)find . -type f -name "*.[chS]" >cscope.files
 	$(V)cscope -bq 
 	$(V)ctags -L cscope.files
+buddy_system:
+	$(V)$(MAKE) $(MAKEOPTS) clean
+	$(V)$(SH) tools/buddy_system_grade_1.sh

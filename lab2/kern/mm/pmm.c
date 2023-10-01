@@ -34,7 +34,7 @@ static void check_alloc_page(void);
 
 // init_pmm_manager - initialize a pmm_manager instance
 static void init_pmm_manager(void) {
-    pmm_manager = &default_pmm_manager;
+    pmm_manager = &best_fit_pmm_manager;
     cprintf("memory management: %s\n", pmm_manager->name);
     pmm_manager->init();
 }
@@ -48,7 +48,6 @@ static void init_memmap(struct Page *base, size_t n) {
 // memory
 struct Page *alloc_pages(size_t n) {
     struct Page *page = NULL;
-    
     bool intr_flag;
     local_intr_save(intr_flag);
     {

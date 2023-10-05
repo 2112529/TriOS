@@ -236,3 +236,6 @@ tags:
 buddy_system:
 	$(V)$(MAKE) $(MAKEOPTS) clean
 	$(V)$(SH) tools/buddy_system_grade_1.sh
+slub:
+	$(V)$(MAKE) $(MAKEOPTS) clean
+	$(V)$(SH) tools/slub_grade_1.sh

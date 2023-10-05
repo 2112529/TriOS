@@ -98,7 +98,7 @@ static void buddy_init_memmap(struct Page *base, size_t n) {
 }
 
 // 分配n个页面的函数
-static struct Page *buddy_alloc_pages(size_t n) {
+struct Page *buddy_alloc_pages(size_t n) {
     assert(n > 0 && (1 << MAX_ORDER) >= n);
     int order = 0;
     while ((1 << order) < n) {
@@ -114,7 +114,7 @@ static struct Page *buddy_alloc_pages(size_t n) {
 }
 
 // 释放n个页面的函数
-static void buddy_free_pages(struct Page *base, size_t n) {
+void buddy_free_pages(struct Page *base, size_t n) {
     assert(n > 0 && (1 << MAX_ORDER) >= n);
     int order = 0;
     while ((1 << order) < n) {

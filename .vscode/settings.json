@@ -1,5 +1,11 @@
 {
     "files.associations": {
-        "defs.h": "c"
+        "defs.h": "c",
+        "*.tcc": "c",
+        "unordered_map": "c",
+        "istream": "c",
+        "numeric": "c",
+        "ostream": "c",
+        "sstream": "c"
     }
 }

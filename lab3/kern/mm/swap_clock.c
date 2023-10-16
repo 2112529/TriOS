@@ -35,9 +35,13 @@ _clock_init_mm(struct mm_struct *mm)
 {     
      /*LAB3 EXERCISE 4: YOUR CODE*/ 
      // 初始化pra_list_head为空链表
+     list_init(&pra_list_head);
+     curr_ptr=pra_list_head.prev;
+
      // 初始化当前指针curr_ptr指向pra_list_head，表示当前页面替换位置为链表头
      // 将mm的私有成员指针指向pra_list_head，用于后续的页面替换算法操作
-     //cprintf(" mm->sm_priv %x in fifo_init_mm\n",mm->sm_priv);
+     mm->sm_priv = &pra_list_head;
+     cprintf(" mm->sm_priv %x in fifo_init_mm\n",mm->sm_priv);
      return 0;
 }
 /*
@@ -52,8 +56,13 @@ _clock_map_swappable(struct mm_struct *mm, uintptr_t addr, struct Page *page, in
     //record the page access situlation
     /*LAB3 EXERCISE 4: YOUR CODE*/ 
     // link the most recent arrival page at the back of the pra_list_head qeueue.
+    list_add_before(curr_ptr,entry);
     // 将页面page插入到页面链表pra_list_head的末尾
+    list_add_after(curr_ptr,entry);
     // 将页面的visited标志置为1，表示该页面已被访问
+    page->pra_visited = 1;
+    cprintf(" page->pra_visited %x in fifo_map_swappable\n",page->pra_visited
+            );
     return 0;
 }
 /*
@@ -73,6 +82,7 @@ _clock_swap_out_victim(struct mm_struct *mm, struct Page ** ptr_page, int in_tic
         /*LAB3 EXERCISE 4: YOUR CODE*/ 
         // 编写代码
         // 遍历页面链表pra_list_head，查找最早未被访问的页面
+        
         // 获取当前页面对应的Page结构指针
         // 如果当前页面未被访问，则将该页面从页面链表中删除，并将该页面指针赋值给ptr_page作为换出页面
         // 如果当前页面已被访问，则将visited标志置为0，表示该页面已被重新访问

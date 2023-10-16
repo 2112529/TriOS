@@ -6,6 +6,8 @@
         "istream": "c",
         "numeric": "c",
         "ostream": "c",
-        "sstream": "c"
+        "sstream": "c",
+        "swap_clock.h": "c",
+        "swap.h": "c"
     }
 }

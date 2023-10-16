@@ -82,7 +82,18 @@ _clock_swap_out_victim(struct mm_struct *mm, struct Page ** ptr_page, int in_tic
         /*LAB3 EXERCISE 4: YOUR CODE*/ 
         // 编写代码
         // 遍历页面链表pra_list_head，查找最早未被访问的页面
-        
+        if (list_empty(head)) {
+            cprintf("list_empty in fifo_swap_out_victim\n");
+            return -1;
+        }
+        list_entry_t *entry = list_next(head);
+        struct Page *page = le2page(entry, pra_link);
+        if (page->pra_visited == 0) {
+            break;
+        }
+        page->pra_visited = 0;
+        cprintf("page->pra_visited %x in fifo_swap_out_victim\n",page->pra_visited
+            );
         // 获取当前页面对应的Page结构指针
         // 如果当前页面未被访问，则将该页面从页面链表中删除，并将该页面指针赋值给ptr_page作为换出页面
         // 如果当前页面已被访问，则将visited标志置为0，表示该页面已被重新访问

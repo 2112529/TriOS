@@ -303,3 +303,149 @@ const struct pmm_manager default_pmm_manager = {
     .check = default_check,
 };
 
+
+
+
+
+
+
+
+
+
+#define MAX_ORDER 10 // 用于表示最大的buddy的大小
+
+// 新增的辅助函数
+static size_t order_of(size_t n) {
+    size_t order = 0;
+    while ((1 << order) < n) {
+        order++;
+    }
+    return order;
+}
+
+static struct Page *buddy_system_default_alloc_pages(size_t n) {
+    size_t order = order_of(n);
+    if ((1 << order) > nr_free) {
+        return NULL;
+    }
+
+    list_entry_t *lists[MAX_ORDER + 1]; // 各个级别的空闲列表
+    for (int i = 0; i <= MAX_ORDER; i++) {
+        lists[i] = &free_list; // 初始化为空
+    }
+
+    list_entry_t *le = &free_list;
+    while ((le = list_next(le)) != &free_list) {
+        struct Page *p = le2page(le, page_link);
+        size_t pg_order = order_of(p->property);
+        lists[pg_order] = le;
+    }
+
+    struct Page *page = NULL;
+    for (; order <= MAX_ORDER; order++) {
+        if (lists[order] != &free_list) {
+            page = le2page(lists[order], page_link);
+            break;
+        }
+    }
+
+    if (page != NULL) {
+        list_del(&(page->page_link));
+        size_t remainder = (1 << order) - n;
+        while (remainder > 0) {
+            order--;
+            struct Page *buddy = page + (1 << order);
+            buddy->property = 1 << order;
+            SetPageProperty(buddy);
+            list_add(&(free_list), &(buddy->page_link));
+            remainder -= 1 << order;
+        }
+        nr_free -= n;
+        ClearPageProperty(page);
+    }
+    return page;
+}
+
+
+list_entry_t free_lists[MAX_ORDER];
+
+int calculate_order(size_t size) {
+    int order = 0;
+    while ((1 << order) < size) order++;
+    return order;
+}
+
+struct Page* find_buddy(struct Page* page, int order) {
+    uint64_t address = (uint64_t) page;
+    uint64_t buddy_address = address ^ (1 << order);
+    return (struct Page*)buddy_address;
+}
+
+bool is_buddy_free(struct Page* buddy, int order) {
+    return !PageReserved(buddy) && PageProperty(buddy) && buddy->property == (1 << order);
+}
+
+struct Page* merge(struct Page* page1, struct Page* page2) {
+    if (page1 > page2) {
+        struct Page* temp = page1;
+        page1 = page2;
+        page2 = temp;
+    }
+    page1->property *= 2;
+    return page1;
+}
+
+void buddy_system_default_free_pages(struct Page* base, size_t n) {
+    assert(n > 0 && (n & (n - 1)) == 0); // 确保n是2的幂
+
+    int order = calculate_order(n);
+    base->property = n;
+    SetPageProperty(base);
+
+    while (order < MAX_ORDER) {
+        struct Page* buddy = find_buddy(base, order);
+        if (!is_buddy_free(buddy, order)) {
+            break;
+        }
+        
+        list_del(&(buddy->page_link));
+        base = merge(base, buddy);
+        order++;
+    }
+    
+    list_add(&free_lists[order], &(base->page_link));
+}
+
+
+
+
+static void
+buddy_system_default_init_memmap(struct Page *base, size_t n) {
+    assert(n > 0);
+    
+    struct Page *p = base;
+    for (; p != base + n; p ++) {
+        assert(PageReserved(p));
+        p->flags = p->property = 0;
+        set_page_ref(p, 0);
+    }
+    base->property = n;
+    SetPageProperty(base);
+    nr_free += n;
+    if (list_empty(&free_list)) {
+        list_add(&free_list, &(base->page_link));
+    } else {
+        list_entry_t* le = &free_list;
+        while ((le = list_next(le)) != &free_list) {
+            struct Page* page = le2page(le, page_link);
+            if (base < page) {
+                list_add_before(le, &(base->page_link));
+                break;
+            } else if (list_next(le) == &free_list) {
+                list_add(le, &(base->page_link));
+            }
+        }
+    }
+}
+
+

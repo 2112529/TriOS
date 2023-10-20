@@ -408,8 +408,11 @@ do_pgfault(struct mm_struct *mm, uint_t error_code, uintptr_t addr) {
             //logical addr
             page_insert(mm->pgdir, page, addr, perm);
             //(3) make the page swappable.
-            page->pra_vaddr = addr;
             swap_map_swappable(mm,addr,page,swap_in);
+
+            
+            page->pra_vaddr = addr;
+            
         } else {
             cprintf("no swap_init_ok but ptep is %x, failed\n", *ptep);
             goto failed;

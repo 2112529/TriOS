@@ -23,10 +23,10 @@ PMP1: 0x0000000000000000-0xffffffffffffffff (A,R,W,X)
 
 Special kernel symbols:
   entry  0xc0200036 (virtual)
-  etext  0xc0204148 (virtual)
-  edata  0xc0209040 (virtual)
-  end    0xc0210690 (virtual)
-Kernel executable memory footprint: 66KB
+  etext  0xc020432e (virtual)
+  edata  0xc020a040 (virtual)
+  end    0xc0211688 (virtual)
+Kernel executable memory footprint: 70KB
 memory management: default_pmm_manager
 membegin 80200000 memend 88000000 mem_size 7e00000
 physcial memory map:
@@ -40,13 +40,64 @@ page fault at 0x00000100: K/W
 check_pgfault() succeeded!
 check_vmm() succeeded.
 SWAP: manager = clock swap manager
-BEGIN check_swap: count 2, total 31662
+BEGIN check_swap: count 2, total 31661
+ mm->sm_priv c0211668 in fifo_init_mm
 setup Page Table for vaddr 0X1000, so alloc a page
 setup Page Table vaddr 0~4MB OVER!
 set up init env for check_swap begin!
 Store/AMO page fault
 page fault at 0x00001000: K/W
-kernel panic at kern/mm/swap_clock.c:51:
-    assertion failed: entry != NULL && curr_ptr != NULL
+Store/AMO page fault
+page fault at 0x00002000: K/W
+Store/AMO page fault
+page fault at 0x00003000: K/W
+Store/AMO page fault
+page fault at 0x00004000: K/W
+set up init env for check_swap over!
+Store/AMO page fault
+page fault at 0x00005000: K/W
+Load page fault
+page fault at 0x00000000: K/R
+not valid addr 0, and  can not find it in vma
+trapframe at 0xffffffffc0208bd0
+  zero     0x00000000
+  ra       0xc0202fbc
+  sp       0xc0208cf0
+  gp       0x00000000
+  tp       0x8001be00
+  t0       0xc0200036
+  t1       0xc020008e
+  t2       0x00000001
+  s0       0x00000000
+  s1       0x00000000
+  a0       0x00000000
+  a1       0x00000000
+  a2       0x00000000
+  a3       0x00000000
+  a4       0xc0211668
+  a5       0x00000000
+  a6       0x00000000
+  a7       0x00000001
+  s2       0xc0452000
+  s3       0xc0211460
+  s4       0x00000001
+  s5       0x00000000
+  s6       0xc0205ac0
+  s7       0xc0205aa8
+  s8       0x00005000
+  s9       0xc0211458
+  s10      0xc02061c8
+  s11      0xc0211598
+  t3       0x00000001
+  t4       0x00000000
+  t5       0x00000000
+  t6       0x82200000
+  status   0x00046100
+  epc      0xc0202fbc
+  badvaddr 0x00000000
+  cause    0x0000000d
+kernel panic at kern/trap/trap.c:264:
+    handle pgfault failed. invalid parameter
+
 Welcome to the kernel debug monitor!!
 Type 'help' for a list of commands.

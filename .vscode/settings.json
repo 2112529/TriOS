@@ -8,6 +8,9 @@
         "ostream": "c",
         "sstream": "c",
         "swap_clock.h": "c",
-        "swap.h": "c"
+        "swap.h": "c",
+        "riscv.h": "c",
+        "sbi.h": "c",
+        "clock.h": "c"
     }
 }

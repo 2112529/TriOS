@@ -38,7 +38,7 @@ _clock_init_mm(struct mm_struct *mm)
      // 初始化pra_list_head为空链表
      list_init(&pra_list_head);
      // 初始化当前指针curr_ptr指向pra_list_head，表示当前页面替换位置为链表头
-     curr_ptr=pra_list_head.prev;
+     curr_ptr=&pra_list_head;
      // 将mm的私有成员指针指向pra_list_head，用于后续的页面替换算法操作
      mm->sm_priv = &pra_list_head;
      cprintf(" mm->sm_priv %x in fifo_init_mm\n",mm->sm_priv);
@@ -80,26 +80,27 @@ _clock_swap_out_victim(struct mm_struct *mm, struct Page ** ptr_page, int in_tic
         /*LAB3 EXERCISE 4: YOUR CODE*/ 
         // 编写代码
         // 遍历页面链表pra_list_head，查找最早未被访问的页面
-        if (list_empty(head)) {
-            cprintf("list_empty in clock_swap_out_victim\n");
-            return -1;
-        }
-        else
-        {
-            curr_ptr=list_next(curr_ptr);
-            // 获取当前页面对应的Page结构指针
-            struct Page *page = le2page(curr_ptr, pra_page_link);
-            // 如果当前页面未被访问，则将该页面从页面链表中删除，并将该页面指针赋值给ptr_page作为换出页面
-            if (page->visited == 0) {
-                ptr_page=&page;
-                list_del(curr_ptr);
+        curr_ptr=list_next(curr_ptr);
+        if(curr_ptr == head) {
+            curr_ptr = list_next(curr_ptr);
+            if(curr_ptr == head) {
+                *ptr_page = NULL;
                 break;
             }
-            // 如果当前页面已被访问，则将visited标志置为0，表示该页面已被重新访问
-            else
-            {
-                page->visited = 0;
-            }
+        }
+        // 获取当前页面对应的Page结构指针
+        struct Page *page = le2page(curr_ptr, pra_page_link);
+        // 如果当前页面未被访问，则将该页面从页面链表中删除，并将该页面指针赋值给ptr_page作为换出页面
+        if (page->visited==0) {
+            *ptr_page=page;
+            list_del(curr_ptr);
+            cprintf("curr_ptr %p\n",curr_ptr);
+            break;
+        }
+        // 如果当前页面已被访问，则将visited标志置为0，表示该页面已被重新访问
+        else
+        {
+            page->visited = 0;
         }
         //list_entry_t *entry = list_next(head);
         // cprintf("page->pra_visited %x in fifo_swap_out_victim\n",page->pra_visited

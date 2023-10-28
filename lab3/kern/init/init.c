@@ -38,11 +38,8 @@ kern_init(void) {
     swap_init();                // init swap
 
     clock_init();               // init clock interrupt
-    intr_enable();              // enable irq interrupt
+    //intr_enable();              // enable irq interrupt
 
-
-    asm("mret");
-    asm("ebreak");
     while (1)
         ;
     /* do nothing */

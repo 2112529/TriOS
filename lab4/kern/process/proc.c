@@ -102,8 +102,20 @@ alloc_proc(void) {
      *       uint32_t flags;                             // Process flag
      *       char name[PROC_NAME_LEN + 1];               // Process name
      */
-
-
+    memset(proc, 0, sizeof(struct proc_struct));
+    proc->state = PROC_UNINIT;
+    proc->pid = -1;
+    proc->runs = 0;
+    proc->kstack = 0;
+    proc->need_resched = 0;
+    proc->parent = NULL;
+    proc->mm = NULL;
+    //初始化context结构体
+    proc->context = (struct context){0};
+    proc->tf = NULL;
+    proc->cr3 = 0;
+    proc->flags = 0;
+    memset(proc->name, 0, sizeof(proc->name));
     }
     return proc;
 }
@@ -172,7 +184,20 @@ proc_run(struct proc_struct *proc) {
         *   lcr3():                   Modify the value of CR3 register
         *   switch_to():              Context switching between two processes
         */
-       
+       //before call switch_to, should load  base addr of "proc"'s new PDT
+       //检查要切换的进程是否与当前正在运行的进程相同，如果相同则不需要切换
+       if (proc->pid == current->pid) 
+           return;
+        //禁 用 中 断。 你 可 以 使 用/kern/sync/sync.h 中 定 义 好 的 宏 local_intr_save(x) 和local_intr_restore(x) 来实现关、开中断。
+       bool intrstate;
+       local_intr_save(intrstate);
+        //切换当前进程为要运行的进程。
+        
+        //切换页表，以便使用新进程的地址空间。/libs/riscv.h 中提供了 lcr3(unsigned int cr3)函数，可实现修改 CR3 寄存器值的功能。
+        lcr3(proc->mm->pgdir);
+        //实现上下文切换
+        switch_to(current,proc);
+        local_intr_restore(intrstate);
     }
 }
 
@@ -292,12 +317,19 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
      */
 
     //    1. call alloc_proc to allocate a proc_struct
+    proc=alloc_proc();
     //    2. call setup_kstack to allocate a kernel stack for child process
+    setup_kstack(proc);
     //    3. call copy_mm to dup OR share mm according clone_flag
+    copy_mm(clone_flags,proc);
     //    4. call copy_thread to setup tf & context in proc_struct
+    copy_thread(proc,clone_flags,stack);
     //    5. insert proc_struct into hash_list && proc_list
+    hash_proc(proc);
     //    6. call wakeup_proc to make the new child process RUNNABLE
+    wakeup_proc(proc);
     //    7. set ret vaule using child proc's pid
+    ret=proc->pid;
 
     
 

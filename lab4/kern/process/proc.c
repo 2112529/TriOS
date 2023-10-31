@@ -102,7 +102,9 @@ alloc_proc(void) {
      *       uint32_t flags;                             // Process flag
      *       char name[PROC_NAME_LEN + 1];               // Process name
      */
-    memset(proc, 0, sizeof(struct proc_struct));
+    //memset(proc, 0, sizeof(struct proc_struct));
+    struct context *context_mem = (struct context*) kmalloc(sizeof(struct context));
+    memset(context_mem, 0, sizeof(struct context));
     proc->state = PROC_UNINIT;
     proc->pid = -1;
     proc->runs = 0;
@@ -111,9 +113,9 @@ alloc_proc(void) {
     proc->parent = NULL;
     proc->mm = NULL;
     //初始化context结构体
-    proc->context = (struct context){0};
+    proc->context = *context_mem;
     proc->tf = NULL;
-    proc->cr3 = 0;
+    proc->cr3 = boot_cr3;
     proc->flags = 0;
     memset(proc->name, 0, sizeof(proc->name));
     }

@@ -23,7 +23,7 @@ PMP1: 0x0000000000000000-0xffffffffffffffff (A,R,W,X)
 
 Special kernel symbols:
   entry  0xc0200036 (virtual)
-  etext  0xc0204e34 (virtual)
+  etext  0xc0204e40 (virtual)
   edata  0xc020a058 (virtual)
   end    0xc02155f8 (virtual)
 Kernel executable memory footprint: 86KB
@@ -41,6 +41,7 @@ Store/AMO page fault
 page falut at 0x00000100: K/W
 check_pgfault() succeeded!
 check_vmm() succeeded.
+alloc_proc() correct!
 Load page fault
 page falut at 0x00000000: K/R
 kernel panic at kern/trap/trap.c:99:

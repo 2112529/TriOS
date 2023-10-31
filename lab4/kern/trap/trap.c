@@ -10,9 +10,10 @@
 #include <swap.h>
 #include <trap.h>
 #include <vmm.h>
+#include <sbi.h>
 
 #define TICK_NUM 100
-
+volatile size_t num=0;
 static void print_ticks() {
     cprintf("%d ticks\n", TICK_NUM);
 #ifdef DEBUG_GRADE
@@ -126,9 +127,14 @@ void interrupt_handler(struct trapframe *tf) {
             // directly.
             // clear_csr(sip, SIP_STIP);
             clock_set_next_event();
-            if (++ticks % TICK_NUM == 0) {
+            if(ticks==100){
                 print_ticks();
+                ticks=0;
+                num++;
             }
+            else ticks++;
+            //cprintf("Supervisor timer interrupt\n");
+            if(num==10)sbi_shutdown();
             break;
         case IRQ_H_TIMER:
             cprintf("Hypervisor software interrupt\n");
@@ -164,10 +170,16 @@ void exception_handler(struct trapframe *tf) {
             cprintf("Instruction access fault\n");
             break;
         case CAUSE_ILLEGAL_INSTRUCTION:
-            cprintf("Illegal instruction\n");
-            break;
+            cprintf("Exception type:Illegal instruction\n");
+            cprintf("Illegal instruction caught at 0x%08x\n", tf->epc);
+            tf->epc += 4;
+            //print_regs(&tf->epc);
+            break;  
         case CAUSE_BREAKPOINT:
-            cprintf("Breakpoint\n");
+            cprintf("Exception type: breakpoint\n");
+            cprintf("ebreak caught at 0x%08x\n", tf->epc);
+            tf->epc += 4;
+            //print_regs(&tf->epc);
             break;
         case CAUSE_MISALIGNED_LOAD:
             cprintf("Load address misaligned\n");

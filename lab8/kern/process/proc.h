@@ -84,6 +84,10 @@ extern struct proc_struct *idleproc, *initproc, *current;
 
 void proc_init(void);
 void proc_run(struct proc_struct *proc);
+void wakeup_proc(struct proc_struct *proc)
+{
+    proc->state = PROC_RUNNABLE;
+};
 int kernel_thread(int (*fn)(void *), void *arg, uint32_t clone_flags);
 
 char *set_proc_name(struct proc_struct *proc, const char *name);

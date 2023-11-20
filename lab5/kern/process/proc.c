@@ -110,6 +110,23 @@ alloc_proc(void) {
      *       uint32_t wait_state;                        // waiting state
      *       struct proc_struct *cptr, *yptr, *optr;     // relations between processes
      */
+    proc->state = PROC_UNINIT;
+    proc->pid = -1;
+    proc->runs = 0;
+    proc->kstack = 0;
+    proc->need_resched = 0;
+    proc->parent = NULL;
+    proc->mm = NULL;
+    //初始化context结构体
+    memset(&(proc->context), 0, sizeof(struct context));
+    proc->tf = NULL;
+    proc->cr3 = boot_cr3;
+    proc->flags = 0;
+    proc->wait_state = 0;
+    proc->cptr = NULL;
+    proc->yptr = NULL;
+    proc->optr = NULL;
+    memset(proc->name, 0, PROC_NAME_LEN+1);
     }
     return proc;
 }
@@ -206,6 +223,20 @@ proc_run(struct proc_struct *proc) {
         *   lcr3():                   Modify the value of CR3 register
         *   switch_to():              Context switching between two processes
         */
+       //检查要切换的进程是否与当前正在运行的进程相同，如果相同则不需要切换
+       if (proc->pid == current->pid) 
+           return;
+        //禁 用 中 断。 你 可 以 使 用/kern/sync/sync.h 中 定 义 好 的 宏 local_intr_save(x) 和local_intr_restore(x) 来实现关、开中断。
+       bool intrstate;
+        struct proc_struct *currentpointer = current, *procpointer = proc;
+       local_intr_save(intrstate);
+        //切换当前进程为要运行的进程。
+        current=proc;
+        //切换页表，以便使用新进程的地址空间。/libs/riscv.h 中提供了 lcr3(unsigned int cr3)函数，可实现修改 CR3 寄存器值的功能。
+        lcr3(procpointer->cr3);
+        //实现上下文切换
+        switch_to(&(currentpointer->context),&(procpointer->context));
+        local_intr_restore(intrstate);
 
     }
 }
@@ -403,6 +434,30 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     *    update step 1: set child proc's parent to current process, make sure current process's wait_state is 0
     *    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
     */
+   //    1. call alloc_proc to allocate a proc_struct
+    proc=alloc_proc();
+    if(!current->wait_state==0)
+    {
+        current->wait_state=0;
+    }
+    proc->parent=current;
+    proc->pid=get_pid();
+    //    2. call setup_kstack to allocate a kernel stack for child process
+    setup_kstack(proc);
+    //    3. call copy_mm to dup OR share mm according clone_flag
+    copy_mm(clone_flags,proc);
+    //    4. call copy_thread to setup tf & context in proc_struct
+    copy_thread(proc,stack,tf);
+    //    5. insert proc_struct into hash_list && proc_list
+    hash_proc(proc);
+    list_add(&proc_list,&(proc->list_link));
+    set_links(&proc);
+    nr_process++;
+    //    6. call wakeup_proc to make the new child process RUNNABLE
+    wakeup_proc(proc);
+    //    7. set ret vaule using child proc's pid
+    
+    ret=proc->pid;
  
 fork_out:
     return ret;
@@ -603,6 +658,12 @@ load_icode(unsigned char *binary, size_t size) {
      *          tf->status should be appropriate for user program (the value of sstatus)
      *          hint: check meaning of SPP, SPIE in SSTATUS, use them by SSTATUS_SPP, SSTATUS_SPIE(defined in risv.h)
      */
+    //tf->gpr.sp should be user stack top (the value of sp)
+    tf->gpr.sp = USTACKTOP - 3 * PGSIZE;
+    //tf->epc should be entry point of user program (the value of sepc)
+    tf->epc = elf_entry(elf);
+    //tf->status should be appropriate for user program (the value of sstatus)
+    tf->status = sstatus | SSTATUS_SPP | SSTATUS_SPIE;
 
 
     ret = 0;

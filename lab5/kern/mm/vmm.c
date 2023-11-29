@@ -434,7 +434,7 @@ do_pgfault(struct mm_struct *mm, uint_t error_code, uintptr_t addr) {
             cprintf("pgdir_alloc_page in do_pgfault failed\n");
             goto failed;
         }
-    } else {
+    }  else {
         /*LAB3 EXERCISE 3: YOUR CODE
         * 请你根据以下信息提示，补充函数
         * 现在我们认为pte是一个交换条目，那我们应该从磁盘加载数据并放到带有phy addr的页面，
@@ -453,12 +453,18 @@ do_pgfault(struct mm_struct *mm, uint_t error_code, uintptr_t addr) {
             //(1）According to the mm AND addr, try
             //to load the content of right disk page
             //into the memory which page managed.
+            swap_in(mm, addr, &page);
             //(2) According to the mm,
             //addr AND page, setup the
             //map of phy addr <--->
             //logical addr
+            page_insert(mm->pgdir, page, addr, perm);
             //(3) make the page swappable.
+            swap_map_swappable(mm,addr,page,swap_in);
+
+            
             page->pra_vaddr = addr;
+            
         } else {
             cprintf("no swap_init_ok but ptep is %x, failed\n", *ptep);
             goto failed;

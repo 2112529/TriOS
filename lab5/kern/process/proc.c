@@ -659,12 +659,17 @@ load_icode(unsigned char *binary, size_t size) {
      *          hint: check meaning of SPP, SPIE in SSTATUS, use them by SSTATUS_SPP, SSTATUS_SPIE(defined in risv.h)
      */
     //tf->gpr.sp should be user stack top (the value of sp)
+    // tf->gpr.sp = USTACKTOP - 3 * PGSIZE;
+    // //tf->epc should be entry point of user program (the value of sepc)
+    // tf->epc = elf_entry(elf);
+    // //tf->status should be appropriate for user program (the value of sstatus)
+    // tf->status = sstatus | SSTATUS_SPP | SSTATUS_SPIE;
+    // Set gpr.sp to user stack top
     tf->gpr.sp = USTACKTOP - 3 * PGSIZE;
-    //tf->epc should be entry point of user program (the value of sepc)
-    tf->epc = elf_entry(elf);
-    //tf->status should be appropriate for user program (the value of sstatus)
-    tf->status = sstatus | SSTATUS_SPP | SSTATUS_SPIE;
-
+    // Set epc to the entry point of the user program
+    tf->epc = elf->e_entry;
+    // Set appropriate status for user program
+    tf->status = sstatus & ~(SSTATUS_SPP | SSTATUS_SPIE) | SSTATUS_SPIE;
 
     ret = 0;
 out:

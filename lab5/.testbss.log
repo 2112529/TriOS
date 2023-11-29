@@ -1,0 +1,85 @@
+
+OpenSBI v0.4 (Jul  2 2019 11:53:53)
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name          : QEMU Virt Machine
+Platform HART Features : RV64ACDFIMSU
+Platform Max HARTs     : 8
+Current Hart           : 0
+Firmware Base          : 0x80000000
+Firmware Size          : 112 KB
+Runtime SBI Version    : 0.1
+
+PMP0: 0x0000000080000000-0x000000008001ffff (A)
+PMP1: 0x0000000000000000-0xffffffffffffffff (A,R,W,X)
+(THU.CST) os is loading ...
+
+Special kernel symbols:
+  entry  0xc0200036 (virtual)
+  etext  0xc0206514 (virtual)
+  edata  0xc02a1068 (virtual)
+  end    0xc02ac5f0 (virtual)
+Kernel executable memory footprint: 690KB
+memory management: default_pmm_manager
+physcial memory map:
+  memory: 0x07e00000, [0x80200000, 0x87ffffff].
+vapaofset is 18446744070488326144
+check_alloc_page() succeeded!
+check_pgdir() succeeded!
+check_boot_pgdir() succeeded!
+use SLOB allocator
+kmalloc_init() succeeded!
+check_vma_struct() succeeded!
+Store/AMO page fault
+page fault at 0x00000100: K/W
+check_pgfault() succeeded!
+check_vmm() succeeded.
+Load page fault
+not valid addr f0, and  can not find it in vma
+trapframe at 0xffffffffc020ad10
+  zero     0x00000000
+  ra       0xc0205100
+  sp       0xc020ae30
+  gp       0x00000000
+  tp       0x8001be00
+  t0       0xc0200036
+  t1       0xc02ac4c8
+  t2       0x00000001
+  s0       0xc020ae90
+  s1       0xc04ad130
+  a0       0xc04ad130
+  a1       0xc02ac5e0
+  a2       0xc04ad1f8
+  a3       0xc02ac5e0
+  a4       0x00000000
+  a5       0xc020af00
+  a6       0x00046120
+  a7       0xc020afb0
+  s2       0xc02ac4b8
+  s3       0xc04b0ee0
+  s4       0x00000000
+  s5       0x00000100
+  s6       0x00000000
+  s7       0x00000008
+  s8       0x00002000
+  s9       0x00000000
+  s10      0x00000000
+  s11      0x00000000
+  t3       0x00000002
+  t4       0x00000000
+  t5       0x00000000
+  t6       0x82200000
+  status   0x00046100
+  epc      0xc020513a
+  tval 0x000000f0
+  cause    0x0000000d
+kernel panic at kern/trap/trap.c:241:
+    handle pgfault failed. invalid parameter
+

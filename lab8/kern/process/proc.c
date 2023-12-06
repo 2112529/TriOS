@@ -105,6 +105,29 @@ alloc_proc(void) {
      *       uint32_t flags;                             // Process flag
      *       char name[PROC_NAME_LEN + 1];               // Process name
      */
+      proc->state = PROC_UNINIT;
+    proc->pid = -1;
+    proc->runs = 0;
+    proc->kstack = 0;
+    proc->need_resched = 0;
+    proc->parent = NULL;
+    proc->mm = NULL;
+    //初始化context结构体
+    memset(&(proc->context), 0, sizeof(struct context));
+    proc->tf = NULL;
+    proc->cr3 = boot_cr3;
+    proc->flags = 0;
+    proc->wait_state = 0;
+    proc->cptr = NULL;
+    proc->yptr = NULL;
+    proc->optr = NULL;
+    proc->rq=NULL;
+    memset(&(proc->run_link), 0, sizeof(struct context));    proc->filesp=NULL;
+    //proc->files_count=0;
+    proc->time_slice=0;
+    proc->filesp=NULL;
+    memset(proc->name, 0, PROC_NAME_LEN+1);
+    }   
      //LAB5 YOUR CODE : (update LAB4 steps)
     /*
      * below fields(add in LAB5) in proc_struct need to be initialized
@@ -127,10 +150,10 @@ alloc_proc(void) {
      * below fields(add in LAB6) in proc_struct need to be initialized
      *       struct files_struct * filesp;                file struct point        
      */
-    }
+    
     return proc;
-}
 
+}
 // set_proc_name - set the name of proc
 char *
 set_proc_name(struct proc_struct *proc, const char *name) {
@@ -223,6 +246,33 @@ proc_run(struct proc_struct *proc) {
         *   lcr3():                   Modify the value of CR3 register
         *   switch_to():              Context switching between two processes
         */
+
+
+
+                // LAB4:EXERCISE3 YOUR CODE
+        /*
+        * Some Useful MACROs, Functions and DEFINEs, you can use them in below implementation.
+        * MACROs or Functions:
+        *   local_intr_save():        Disable interrupts
+        *   local_intr_restore():     Enable Interrupts
+        *   lcr3():                   Modify the value of CR3 register
+        *   switch_to():              Context switching between two processes
+        */
+       //检查要切换的进程是否与当前正在运行的进程相同，如果相同则不需要切换
+       if (proc->pid == current->pid) 
+           return;
+        //禁 用 中 断。 你 可 以 使 用/kern/sync/sync.h 中 定 义 好 的 宏 local_intr_save(x) 和local_intr_restore(x) 来实现关、开中断。
+       bool intrstate;
+        struct proc_struct *currentpointer = current, *procpointer = proc;
+       local_intr_save(intrstate);
+        //切换当前进程为要运行的进程。
+        current=proc;
+        //切换页表，以便使用新进程的地址空间。/libs/riscv.h 中提供了 lcr3(unsigned int cr3)函数，可实现修改 CR3 寄存器值的功能。
+        lcr3(procpointer->cr3);
+        //实现上下文切换
+        flush_tlb();
+        switch_to(&(currentpointer->context),&(procpointer->context));
+        local_intr_restore(intrstate);
        //LAB8 YOUR CODE : (update LAB4 steps)
       /*
      * below fields(add in LAB6) in proc_struct need to be initialized
@@ -230,6 +280,8 @@ proc_run(struct proc_struct *proc) {
     *        MACROs or Functions:
      *       flush_tlb():          flush the tlb        
      */
+
+
 
     }
 }
@@ -469,11 +521,73 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
   *    update step 1: set child proc's parent to current process, make sure current process's wait_state is 0
   *    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
     */
-  
-    if (copy_files(clone_flags, proc) != 0) { //for LAB8
-        goto bad_fork_cleanup_kstack;
+    //LAB4:EXERCISE2 YOUR CODE
+    /*
+     * Some Useful MACROs, Functions and DEFINEs, you can use them in below implementation.
+     * MACROs or Functions:
+     *   alloc_proc:   create a proc struct and init fields (lab4:exercise1)
+     *   setup_kstack: alloc pages with size KSTACKPAGE as process kernel stack
+     *   copy_mm:      process "proc" duplicate OR share process "current"'s mm according clone_flags
+     *                 if clone_flags & CLONE_VM, then "share" ; else "duplicate"
+     *   copy_thread:  setup the trapframe on the  process's kernel stack top and
+     *                 setup the kernel entry point and stack of process
+     *   hash_proc:    add proc into proc hash_list
+     *   get_pid:      alloc a unique pid for process
+     *   wakeup_proc:  set proc->state = PROC_RUNNABLE
+     * VARIABLES:
+     *   proc_list:    the process set's list
+     *   nr_process:   the number of process set
+     */
+
+    //    1. call alloc_proc to allocate a proc_struct
+    //    2. call setup_kstack to allocate a kernel stack for child process
+    //    3. call copy_mm to dup OR share mm according clone_flag
+    //    4. call copy_thread to setup tf & context in proc_struct
+    //    5. insert proc_struct into hash_list && proc_list
+    //    6. call wakeup_proc to make the new child process RUNNABLE
+    //    7. set ret vaule using child proc's pid
+
+    //LAB5 YOUR CODE : (update LAB4 steps)
+    //TIPS: you should modify your written code in lab4(step1 and step5), not add more code.
+   /* Some Functions
+    *    set_links:  set the relation links of process.  ALSO SEE: remove_links:  lean the relation links of process 
+    *    -------------------
+    *    update step 1: set child proc's parent to current process, make sure current process's wait_state is 0
+    *    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
+    */
+   //    1. call alloc_proc to allocate a proc_struct
+    proc=alloc_proc();
+    if(!current->wait_state==0)
+    {
+        current->wait_state=0;
     }
-   
+    proc->parent=current;
+    proc->pid=get_pid();
+    //    2. call setup_kstack to allocate a kernel stack for child process
+    setup_kstack(proc);
+    //    3. call copy_mm to dup OR share mm according clone_flag
+    copy_mm(clone_flags,proc);
+    //    4. call copy_thread to setup tf & context in proc_struct
+    copy_thread(proc,stack,tf);
+    //    5. insert proc_struct into hash_list && proc_list
+    
+    bool intrstate;
+    local_intr_save(intrstate);
+    hash_proc(proc);
+    //list_add(&proc_list,&(proc->list_link));
+    set_links(proc);
+    local_intr_restore(intrstate);
+
+    
+    //nr_process++;
+    //    6. call wakeup_proc to make the new child process RUNNABLE
+    wakeup_proc(proc);
+    //    7. set ret vaule using child proc's pid
+    
+    ret=proc->pid;
+ 
+
+
 fork_out:
     return ret;
 
@@ -584,7 +698,166 @@ load_icode(int fd, int argc, char **kargv) {
      * (7) setup trapframe for user environment
      * (8) if up steps failed, you should cleanup the env.
      */
+     if (current->mm != NULL) {
+        panic("load_icode: current->mm must be empty.\n");
+    }
+
+    int ret = -E_NO_MEM;
+    struct mm_struct *mm;
+    //(1) create a new mm for current process
+    if ((mm = mm_create()) == NULL) {
+        goto bad_mm;
+    }
+    //(2) create a new PDT, and mm->pgdir= kernel virtual addr of PDT
+    if (setup_pgdir(mm) != 0) {
+        goto bad_pgdir_cleanup_mm;
+    }
+    //(3) copy TEXT/DATA/BSS parts in binary to memory space of process
+    struct Page *page;
+    //(3.1) read raw data content in file and resolve elfhdr
+    // if (read_from_file(binary, 0, sizeof(struct elfhdr)) != sizeof(struct elfhdr))
+    //     goto bad_pgdir_cleanup_mm;
+    // //(3.2) read raw data content in file and resolve proghdr based on info in elfhdr
+    // if (read_from_file(binary, sizeof(struct elfhdr), elf->e_phnum * sizeof(struct proghdr)) != elf->e_phnum * sizeof(struct proghdr))
+    //     goto bad_pgdir_cleanup_mm;
+    //struct proghdr *ph = (struct proghdr *)(binary + elf->e_phoff);
+    //(3.3) call mm_map to build vma related to TEXT/DATA
     
+    
+    
+
+    if (elf->e_magic != ELF_MAGIC) {
+        ret = -E_INVAL_ELF;
+        goto bad_elf_cleanup_pgdir;
+    }
+
+    uint32_t vm_flags, perm;
+    struct proghdr *ph_end = ph + elf->e_phnum;
+    for (; ph < ph_end; ph ++) {
+    //(3.4) find every program section headers
+        if (ph->p_type != ELF_PT_LOAD) {
+            continue ;
+        }
+        if (ph->p_filesz > ph->p_memsz) {
+            ret = -E_INVAL_ELF;
+            goto bad_cleanup_mmap;
+        }
+        if (ph->p_filesz == 0) {
+            // continue ;
+        }
+    //(3.5) call mm_map fun to setup the new vma ( ph->p_va, ph->p_memsz)
+        vm_flags = 0, perm = PTE_U | PTE_V;
+        if (ph->p_flags & ELF_PF_X) vm_flags |= VM_EXEC;
+        if (ph->p_flags & ELF_PF_W) vm_flags |= VM_WRITE;
+        if (ph->p_flags & ELF_PF_R) vm_flags |= VM_READ;
+        // modify the perm bits here for RISC-V
+        if (vm_flags & VM_READ) perm |= PTE_R;
+        if (vm_flags & VM_WRITE) perm |= (PTE_W | PTE_R);
+        if (vm_flags & VM_EXEC) perm |= PTE_X;
+        if ((ret = mm_map(mm, ph->p_va, ph->p_memsz, vm_flags, NULL)) != 0) {
+            goto bad_cleanup_mmap;
+        }
+        unsigned char *from = binary + ph->p_offset;
+        size_t off, size;
+        uintptr_t start = ph->p_va, end, la = ROUNDDOWN(start, PGSIZE);
+
+        ret = -E_NO_MEM;
+
+     //(3.6) alloc memory, and  copy the contents of every program section (from, from+end) to process's memory (la, la+end)
+        end = ph->p_va + ph->p_filesz;
+     //(3.6.1) copy TEXT/DATA section of bianry program
+        while (start < end) {
+            if ((page = pgdir_alloc_page(mm->pgdir, la, perm)) == NULL) {
+                goto bad_cleanup_mmap;
+            }
+            off = start - la, size = PGSIZE - off, la += PGSIZE;
+            if (end < la) {
+                size -= la - end;
+            }
+            memcpy(page2kva(page) + off, from, size);
+            start += size, from += size;
+        }
+
+      //(3.6.2) build BSS section of binary program
+        end = ph->p_va + ph->p_memsz;
+        if (start < la) {
+            /* ph->p_memsz == ph->p_filesz */
+            if (start == end) {
+                continue ;
+            }
+            off = start + PGSIZE - la, size = PGSIZE - off;
+            if (end < la) {
+                size -= la - end;
+            }
+            memset(page2kva(page) + off, 0, size);
+            start += size;
+            assert((end < la && start == end) || (end >= la && start == la));
+        }
+        while (start < end) {
+            if ((page = pgdir_alloc_page(mm->pgdir, la, perm)) == NULL) {
+                goto bad_cleanup_mmap;
+            }
+            off = start - la, size = PGSIZE - off, la += PGSIZE;
+            if (end < la) {
+                size -= la - end;
+            }
+            memset(page2kva(page) + off, 0, size);
+            start += size;
+        }
+    }
+    //(4) build user stack memory
+    vm_flags = VM_READ | VM_WRITE | VM_STACK;
+    if ((ret = mm_map(mm, USTACKTOP - USTACKSIZE, USTACKSIZE, vm_flags, NULL)) != 0) {
+        goto bad_cleanup_mmap;
+    }
+    assert(pgdir_alloc_page(mm->pgdir, USTACKTOP-PGSIZE , PTE_USER) != NULL);
+    assert(pgdir_alloc_page(mm->pgdir, USTACKTOP-2*PGSIZE , PTE_USER) != NULL);
+    assert(pgdir_alloc_page(mm->pgdir, USTACKTOP-3*PGSIZE , PTE_USER) != NULL);
+    assert(pgdir_alloc_page(mm->pgdir, USTACKTOP-4*PGSIZE , PTE_USER) != NULL);
+    
+    //(5) set current process's mm, sr3, and set CR3 reg = physical addr of Page Directory
+    mm_count_inc(mm);
+    current->mm = mm;
+    current->cr3 = PADDR(mm->pgdir);
+    lcr3(PADDR(mm->pgdir));
+
+    //(6) setup trapframe for user environment
+    struct trapframe *tf = current->tf;
+    // Keep sstatus
+    uintptr_t sstatus = tf->status;
+    memset(tf, 0, sizeof(struct trapframe));
+    /* LAB5:EXERCISE1 YOUR CODE
+     * should set tf->gpr.sp, tf->epc, tf->status
+     * NOTICE: If we set trapframe correctly, then the user level process can return to USER MODE from kernel. So
+     *          tf->gpr.sp should be user stack top (the value of sp)
+     *          tf->epc should be entry point of user program (the value of sepc)
+     *          tf->status should be appropriate for user program (the value of sstatus)
+     *          hint: check meaning of SPP, SPIE in SSTATUS, use them by SSTATUS_SPP, SSTATUS_SPIE(defined in risv.h)
+     */
+    //tf->gpr.sp should be user stack top (the value of sp)
+    // tf->gpr.sp = USTACKTOP - 3 * PGSIZE;
+    // //tf->epc should be entry point of user program (the value of sepc)
+    // tf->epc = elf_entry(elf);
+    // //tf->status should be appropriate for user program (the value of sstatus)
+    // tf->status = sstatus | SSTATUS_SPP | SSTATUS_SPIE;
+    // Set gpr.sp to user stack top
+    tf->gpr.sp = USTACKTOP ;
+    // Set epc to the entry point of the user program
+    tf->epc = elf->e_entry;
+    // Set appropriate status for user program
+    tf->status = sstatus & ~(SSTATUS_SPP | SSTATUS_SPIE);
+
+    ret = 0;
+out:
+    return ret;
+bad_cleanup_mmap:
+    exit_mmap(mm);
+bad_elf_cleanup_pgdir:
+    put_pgdir(mm);
+bad_pgdir_cleanup_mm:
+    mm_destroy(mm);
+bad_mm:
+    goto out;
 }
 
 // this function isn't very correct in LAB8

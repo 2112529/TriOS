@@ -11,6 +11,7 @@
         "swap.h": "c",
         "riscv.h": "c",
         "sbi.h": "c",
-        "clock.h": "c"
+        "clock.h": "c",
+        "stdio.h": "c"
     }
 }

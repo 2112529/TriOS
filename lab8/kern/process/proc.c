@@ -715,13 +715,14 @@ load_icode(int fd, int argc, char **kargv) {
     //(3) copy TEXT/DATA/BSS parts in binary to memory space of process
     struct Page *page;
     //(3.1) read raw data content in file and resolve elfhdr
-    // if (read_from_file(binary, 0, sizeof(struct elfhdr)) != sizeof(struct elfhdr))
+     if (read_from_file(binary, 0, sizeof(struct elfhdr)) != sizeof(struct elfhdr))
     //     goto bad_pgdir_cleanup_mm;
     // //(3.2) read raw data content in file and resolve proghdr based on info in elfhdr
-    // if (read_from_file(binary, sizeof(struct elfhdr), elf->e_phnum * sizeof(struct proghdr)) != elf->e_phnum * sizeof(struct proghdr))
+     if (read_from_file(binary, sizeof(struct elfhdr), elf->e_phnum * sizeof(struct proghdr)) != elf->e_phnum * sizeof(struct proghdr))
     //     goto bad_pgdir_cleanup_mm;
     //struct proghdr *ph = (struct proghdr *)(binary + elf->e_phoff);
     //(3.3) call mm_map to build vma related to TEXT/DATA
+    mm_map();
     
     
     

@@ -714,18 +714,12 @@ load_icode(int fd, int argc, char **kargv) {
     }
     //(3) copy TEXT/DATA/BSS parts in binary to memory space of process
     struct Page *page;
+    struct elfhdr *elf;
+    struct proghdr *ph;
     //(3.1) read raw data content in file and resolve elfhdr
-     if (read_from_file(binary, 0, sizeof(struct elfhdr)) != sizeof(struct elfhdr))
-    //     goto bad_pgdir_cleanup_mm;
+    load_icode_read(fd, (void *)elf, sizeof(struct elfhdr), 0);
     // //(3.2) read raw data content in file and resolve proghdr based on info in elfhdr
-     if (read_from_file(binary, sizeof(struct elfhdr), elf->e_phnum * sizeof(struct proghdr)) != elf->e_phnum * sizeof(struct proghdr))
-    //     goto bad_pgdir_cleanup_mm;
-    //struct proghdr *ph = (struct proghdr *)(binary + elf->e_phoff);
-    //(3.3) call mm_map to build vma related to TEXT/DATA
-    mm_map();
-    
-    
-    
+    load_icode_read(fd, (void *)ph, sizeof(struct proghdr), elf->e_phoff );
 
     if (elf->e_magic != ELF_MAGIC) {
         ret = -E_INVAL_ELF;
@@ -758,7 +752,7 @@ load_icode(int fd, int argc, char **kargv) {
         if ((ret = mm_map(mm, ph->p_va, ph->p_memsz, vm_flags, NULL)) != 0) {
             goto bad_cleanup_mmap;
         }
-        unsigned char *from = binary + ph->p_offset;
+        unsigned char *from = ph->p_offset;
         size_t off, size;
         uintptr_t start = ph->p_va, end, la = ROUNDDOWN(start, PGSIZE);
 
@@ -806,8 +800,9 @@ load_icode(int fd, int argc, char **kargv) {
             start += size;
         }
     }
-    //(4) build user stack memory
-    vm_flags = VM_READ | VM_WRITE | VM_STACK;
+    sysfile_close(fd);
+    //(4) call mm_map to setup user stack, and put parameters into user stack
+     vm_flags = VM_READ | VM_WRITE | VM_STACK;
     if ((ret = mm_map(mm, USTACKTOP - USTACKSIZE, USTACKSIZE, vm_flags, NULL)) != 0) {
         goto bad_cleanup_mmap;
     }
@@ -815,14 +810,28 @@ load_icode(int fd, int argc, char **kargv) {
     assert(pgdir_alloc_page(mm->pgdir, USTACKTOP-2*PGSIZE , PTE_USER) != NULL);
     assert(pgdir_alloc_page(mm->pgdir, USTACKTOP-3*PGSIZE , PTE_USER) != NULL);
     assert(pgdir_alloc_page(mm->pgdir, USTACKTOP-4*PGSIZE , PTE_USER) != NULL);
-    
-    //(5) set current process's mm, sr3, and set CR3 reg = physical addr of Page Directory
+    //(5) setup current process's mm, cr3, reset pgidr (using lcr3 MARCO)
     mm_count_inc(mm);
     current->mm = mm;
     current->cr3 = PADDR(mm->pgdir);
     lcr3(PADDR(mm->pgdir));
+    //(6) setup uargc and uargv in user stacks
+    uint32_t argv_size=0, i;
+    for (i = 0; i < argc; i ++) {
+        argv_size += strnlen(kargv[i],EXEC_MAX_ARG_LEN + 1)+1;
+    }
 
-    //(6) setup trapframe for user environment
+    uintptr_t stacktop = USTACKTOP - (argv_size/sizeof(long)+1)*sizeof(long);
+    char** uargv=(char **)(stacktop  - argc * sizeof(char *));
+    
+    argv_size = 0;
+    for (i = 0; i < argc; i ++) {
+        uargv[i] = strcpy((char *)(stacktop + argv_size ), kargv[i]);
+        argv_size +=  strnlen(kargv[i],EXEC_MAX_ARG_LEN + 1)+1;
+    }
+    //(7) setup trapframe for user environment
+    stacktop = (uintptr_t)uargv - sizeof(int);
+    *(int *)stacktop = argc;
     struct trapframe *tf = current->tf;
     // Keep sstatus
     uintptr_t sstatus = tf->status;

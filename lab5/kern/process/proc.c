@@ -498,7 +498,10 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     *    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
     */
    //    1. call alloc_proc to allocate a proc_struct
-    proc=alloc_proc();
+    proc = alloc_proc();
+    if (!proc) {
+        goto bad_fork_cleanup_proc;
+    }
     if(!current->wait_state==0)
     {
         current->wait_state=0;
@@ -507,6 +510,10 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     proc->pid=get_pid();
     //    2. call setup_kstack to allocate a kernel stack for child process
     setup_kstack(proc);
+    if (!proc->kstack) {
+        goto bad_fork_cleanup_kstack;
+    }
+    
     //    3. call copy_mm to dup OR share mm according clone_flag
     copy_mm(clone_flags,proc);
     //    4. call copy_thread to setup tf & context in proc_struct

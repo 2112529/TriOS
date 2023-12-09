@@ -224,6 +224,7 @@ int
 vfs_mount(const char *devname, int (*mountfunc)(struct device *dev, struct fs **fs_store)) {
     int ret;
     lock_vdev_list();
+    //cprintf("1111111111111111111");
     vfs_dev_t *vdev;
     if ((ret = find_mount(devname, &vdev)) != 0) {
         goto out;
@@ -232,8 +233,9 @@ vfs_mount(const char *devname, int (*mountfunc)(struct device *dev, struct fs **
         ret = -E_BUSY;
         goto out;
     }
+    //cprintf("1111111111111111111");
     assert(vdev->devname != NULL && vdev->mountable);
-
+    //cprintf("vfs: mounting %s.\n", vdev->devname);
     struct device *dev = vop_info(vdev->devnode, device);
     if ((ret = mountfunc(dev, &(vdev->fs))) == 0) {
         assert(vdev->fs != NULL);

@@ -124,7 +124,7 @@ alloc_proc(void) {
     proc->rq=NULL;
     list_init(&(proc->run_link));
     list_init(&(proc->hash_link));
-    memset(&(proc->run_link), 0, sizeof(struct context));    
+    //memset(&(proc->run_link), 0, sizeof(struct context));    
     proc->time_slice=0;
     proc->filesp=NULL;
     memset(proc->name, 0, PROC_NAME_LEN+1);
@@ -427,7 +427,7 @@ copy_thread(struct proc_struct *proc, uintptr_t esp, struct trapframe *tf) {
 
     // Set a0 to 0 so a child process knows it's just forked
     proc->tf->gpr.a0 = 0;
-    proc->tf->gpr.sp = (esp == 0) ? (uintptr_t)proc->tf : esp;
+    proc->tf->gpr.sp = (esp == 0) ? (uintptr_t)proc->tf-4 : esp;
 
     proc->context.ra = (uintptr_t)forkret;
     proc->context.sp = (uintptr_t)(proc->tf);

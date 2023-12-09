@@ -264,7 +264,12 @@ MAKEOPTS		:= --quiet --no-print-directory
 grade:
 	$(V)$(MAKE) $(MAKEOPTS) clean
 	$(V)$(SH) tools/grade.sh
-
+cow_grade:
+	$(V)$(MAKE) $(MAKEOPTS) clean
+	$(V)$(SH) tools/cow_grade.sh
+dirty_cow:
+	$(V)$(MAKE) $(MAKEOPTS) clean
+	$(V)$(SH) tools/dirty_cow.sh
 touch:
 	$(V)$(foreach f,$(TOUCH_FILES),$(TOUCH) $(f))
 

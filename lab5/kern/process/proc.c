@@ -372,6 +372,69 @@ bad_mm:
     return ret;
 }
 
+// pmm.c
+
+static int copy_mm_cow(uint32_t clone_flags, struct proc_struct *proc) {
+    struct mm_struct *mm, *oldmm = current->mm;
+
+    if (oldmm == NULL) {
+        return 0;
+    }
+
+    if (clone_flags & CLONE_VM) {
+        mm = oldmm;
+        mm_count_inc(mm);
+        proc->mm = mm;
+        proc->cr3 = PADDR(mm->pgdir);
+        return set_cow_pages(oldmm);
+    }
+
+    if ((mm = mm_create()) == NULL) {
+        return -E_NO_MEM;
+    }
+
+    if (setup_pgdir(mm) != 0) {
+        mm_destroy(mm);
+        return -E_NO_MEM;
+    }
+
+    lock_mm(oldmm);
+    {
+        int ret = dup_mmap(mm, oldmm);
+        unlock_mm(oldmm);
+        if (ret != 0) {
+            exit_mmap(mm);
+            put_pgdir(mm);
+            mm_destroy(mm);
+            return ret;
+        }
+    }
+
+    mm_count_inc(mm);
+    proc->mm = mm;
+    proc->cr3 = PADDR(mm->pgdir);
+    return 0;
+}
+
+int set_cow_pages(struct mm_struct *mm) {
+    list_entry_t *entry = &(mm->mmap_list);
+    while ((entry = list_next(entry)) != &(mm->mmap_list)) {
+        struct vma_struct *vma = le2vma(entry, list_link);
+        if (vma->vm_flags & VM_WRITE) {
+            uintptr_t addr;
+            for (addr = vma->vm_start; addr < vma->vm_end; addr += PGSIZE) {
+                pte_t *pte = get_pte(mm->pgdir, addr, 0);
+                if (pte != NULL && (*pte & PTE_V)) {
+                    *pte = *pte & ~PTE_W;
+                    *pte = *pte | PTE_COW;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+
 // copy_thread - setup the trapframe on the  process's kernel stack top and
 //             - setup the kernel entry point and stack of process
 static void

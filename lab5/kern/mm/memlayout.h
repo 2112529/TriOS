@@ -1,6 +1,7 @@
 #ifndef __KERN_MM_MEMLAYOUT_H__
 #define __KERN_MM_MEMLAYOUT_H__
 
+#define PTE_COW 0x800 // Add this line to define Copy-on-Write flag
 /* This file contains the definitions for memory management in our OS. */
 
 /* *

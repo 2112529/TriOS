@@ -257,6 +257,14 @@ run_test() {
     tag=
     prog=
     check=check_regexps
+    if [ "x$USE_COW" = "x1" ]; then
+        # 使用 COW 机制进行编译和运行
+        build_run_cow "$tag" "$args"
+    else
+        # 使用常规方法进行编译和运行
+        build_run "$tag" "$args"
+    fi
+    
     while true; do
         select=
         case $1 in
@@ -325,7 +333,35 @@ osimg=$(make_print ucoreimg)
 swapimg=$(make_print swapimg)
 
 ## set default qemu-options
-qemuopts="-machine virt -nographic -bios default -device loader,file=bin/ucore.img,addr=0x80200000 "
+qemuopts="-machine virt -nographic -bios default -device loader,file=bin/ucore.img,addr=0x80200000"
+
+# 添加 USE_COW 宏定义，以启用 COW 机制的相关代码
+COW_FLAGS="-DUSE_COW"
+
+# 定义一个函数，用于编译和运行包含 COW 机制的代码
+build_run_cow() {
+    # usage: build_run_cow <tag> <args>
+    show_build_tag "$1"
+    shift
+
+    if $verbose; then
+        echo "$make $@ $COW_FLAGS ..."
+    fi
+    $make $makeopts $@ 'DEFS+=-DDEBUG_GRADE' $COW_FLAGS > $out 2> $err
+
+    if [ $? -ne 0 ]; then
+        echo $make $@ failed
+        exit 1
+    fi
+
+    # 运行 QEMU 并将输出重定向到 $qemu_out
+    run_qemu
+
+    show_time
+
+    # 保存 QEMU 的输出到日志文件
+    cp $qemu_out .`echo $tag | tr '[:upper:]' '[:lower:]' | sed 's/ /_/g'`.log
+}
 
 ## set break-function, default is readline
 brkfun=readline

@@ -122,8 +122,9 @@ alloc_proc(void) {
     proc->yptr = NULL;
     proc->optr = NULL;
     proc->rq=NULL;
-    memset(&(proc->run_link), 0, sizeof(struct context));    proc->filesp=NULL;
-    //proc->files_count=0;
+    list_init(&(proc->run_link));
+    list_init(&(proc->hash_link));
+    memset(&(proc->run_link), 0, sizeof(struct context));    
     proc->time_slice=0;
     proc->filesp=NULL;
     memset(proc->name, 0, PROC_NAME_LEN+1);
@@ -714,13 +715,13 @@ load_icode(int fd, int argc, char **kargv) {
     }
     //(3) copy TEXT/DATA/BSS parts in binary to memory space of process
     struct Page *page;
-    struct elfhdr *elf;
-    struct proghdr *ph;
+    struct elfhdr __elf, *elf = &__elf;
+    struct proghdr __ph, * ph = &__ph;
     //(3.1) read raw data content in file and resolve elfhdr
     load_icode_read(fd, (void *)elf, sizeof(struct elfhdr), 0);
     // //(3.2) read raw data content in file and resolve proghdr based on info in elfhdr
-    load_icode_read(fd, (void *)ph, sizeof(struct proghdr), elf->e_phoff );
-
+    //load_icode_read(fd, (void *)ph, sizeof(struct proghdr), elf->e_phoff );
+    //(3.3) This program is valid?
     if (elf->e_magic != ELF_MAGIC) {
         ret = -E_INVAL_ELF;
         goto bad_elf_cleanup_pgdir;
@@ -728,8 +729,13 @@ load_icode(int fd, int argc, char **kargv) {
 
     uint32_t vm_flags, perm;
     struct proghdr *ph_end = ph + elf->e_phnum;
-    for (; ph < ph_end; ph ++) {
-    //(3.4) find every program section headers
+    // for (; ph < ph_end; ph ++) {
+    for(int index=0; index<elf->e_phnum; index++)
+    {
+        //(3.4) find every program section headers
+        off_t ph_off = elf->e_phoff + sizeof(struct proghdr) * index;
+    
+        load_icode_read(fd, (void*)ph, sizeof(struct proghdr), ph_off);
         if (ph->p_type != ELF_PT_LOAD) {
             continue ;
         }
@@ -752,7 +758,7 @@ load_icode(int fd, int argc, char **kargv) {
         if ((ret = mm_map(mm, ph->p_va, ph->p_memsz, vm_flags, NULL)) != 0) {
             goto bad_cleanup_mmap;
         }
-        unsigned char *from = ph->p_offset;
+        size_t from = ph->p_offset;
         size_t off, size;
         uintptr_t start = ph->p_va, end, la = ROUNDDOWN(start, PGSIZE);
 
@@ -769,7 +775,7 @@ load_icode(int fd, int argc, char **kargv) {
             if (end < la) {
                 size -= la - end;
             }
-            memcpy(page2kva(page) + off, from, size);
+            load_icode_read(fd, page2kva(page) + off, size, from);
             start += size, from += size;
         }
 
@@ -778,7 +784,7 @@ load_icode(int fd, int argc, char **kargv) {
         if (start < la) {
             /* ph->p_memsz == ph->p_filesz */
             if (start == end) {
-                continue ;
+                continue ;  
             }
             off = start + PGSIZE - la, size = PGSIZE - off;
             if (end < la) {
@@ -851,7 +857,7 @@ load_icode(int fd, int argc, char **kargv) {
     // //tf->status should be appropriate for user program (the value of sstatus)
     // tf->status = sstatus | SSTATUS_SPP | SSTATUS_SPIE;
     // Set gpr.sp to user stack top
-    tf->gpr.sp = USTACKTOP ;
+    tf->gpr.sp = stacktop ;
     // Set epc to the entry point of the user program
     tf->epc = elf->e_entry;
     // Set appropriate status for user program

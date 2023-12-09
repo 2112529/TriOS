@@ -345,6 +345,40 @@ void exit_range(pde_t *pgdir, uintptr_t start, uintptr_t end) {
  * CALL GRAPH: copy_mm-->dup_mmap-->copy_range
  */
 int copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end, bool share) {
+     #ifdef USE_COW
+
+    #ifdef USE_COW_FIX
+    local_intr_save(intr_flag);
+    #endif
+    {
+    assert(start % PGSIZE == 0 && end % PGSIZE == 0);
+    assert(USER_ACCESS(start, end));
+    do {
+        pte_t *ptep = get_pte(from, start, 0);
+        if (ptep == NULL) {
+            start = ROUNDDOWN(start + PTSIZE, PTSIZE);
+            continue;
+        }
+        if (*ptep & PTE_V) {
+            pte_t *nptep = get_pte(to, start, 1);
+            if (nptep == NULL) {
+                return -E_NO_MEM;
+            }
+
+            // Mark both parent and child as COW
+            *ptep &= ~PTE_W; *ptep |= PTE_COW;
+            *nptep = *ptep;
+            tlb_invalidate(from, start);
+            tlb_invalidate(to, start);
+        }
+        start += PGSIZE;
+    } while (start != 0 && start < end);
+    return 0;
+    }
+    #ifdef USE_COW_FIX
+    local_intr_restore(intr_flag);
+    #endif
+     #endif
     assert(start % PGSIZE == 0 && end % PGSIZE == 0);
     assert(USER_ACCESS(start, end));
     // copy content by page unit.
@@ -389,6 +423,35 @@ int copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end, bool shar
     } while (start != 0 && start < end);
     return 0;
 }
+
+//COW机制的实现
+int copy_range_cow(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end, bool share) {
+    assert(start % PGSIZE == 0 && end % PGSIZE == 0);
+    assert(USER_ACCESS(start, end));
+    do {
+        pte_t *ptep = get_pte(from, start, 0);
+        if (ptep == NULL) {
+            start = ROUNDDOWN(start + PTSIZE, PTSIZE);
+            continue;
+        }
+        if (*ptep & PTE_V) {
+            pte_t *nptep = get_pte(to, start, 1);
+            if (nptep == NULL) {
+                return -E_NO_MEM;
+            }
+
+            // Mark both parent and child as COW
+            *ptep &= ~PTE_W; *ptep |= PTE_COW;
+            *nptep = *ptep;
+            tlb_invalidate(from, start);
+            tlb_invalidate(to, start);
+        }
+        start += PGSIZE;
+    } while (start != 0 && start < end);
+    return 0;
+}
+
+
 // page_remove - free an Page which is related linear address la and has an
 // validated pte
 void page_remove(pde_t *pgdir, uintptr_t la) {

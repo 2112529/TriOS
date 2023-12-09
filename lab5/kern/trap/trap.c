@@ -16,7 +16,7 @@
 #include <sched.h>
 #include <sync.h>
 #include <sbi.h>
-
+#include <string.h>
 #define TICK_NUM 100
 
 static void print_ticks() {
@@ -26,7 +26,7 @@ static void print_ticks() {
     panic("EOT: kernel seems ok.");
 #endif
 }
-
+bool use_cow = 0;
 /* idt_init - initialize IDT to each of the entry points in kern/trap/vectors.S */
 void
 idt_init(void) {
@@ -242,6 +242,15 @@ void exception_handler(struct trapframe *tf) {
             }
             break;
         case CAUSE_STORE_PAGE_FAULT:
+            if (use_cow == 1 && handle_cow_fault(tf) == 0) {
+                return; // COW fault handled
+            }
+             #ifdef USE_COW
+            if (*pte & PTE_COW) {
+                return handle_cow_fault(tf);
+            }
+            #endif
+
             cprintf("Store/AMO page fault\n");
             if ((ret = pgfault_handler(tf)) != 0) {
                 print_trapframe(tf);
@@ -253,6 +262,33 @@ void exception_handler(struct trapframe *tf) {
             break;
     }
 }
+// handle_cow_fault - handle a Copy-on-Write fault
+int handle_cow_fault(struct trapframe *tf) {
+    uintptr_t fault_addr = tf->tval;
+    pte_t *pte = get_pte(current->mm->pgdir, fault_addr, 0);
+
+    if (pte != NULL && (*pte & PTE_COW)) {
+        struct Page *new_page = alloc_page();
+        if (new_page == NULL) {
+            return -E_NO_MEM; // 无法分配新页面
+        }
+
+        void *kva_new = page2kva(new_page);
+        void *kva_old = KADDR(PTE_ADDR(*pte));
+
+        // 复制内容到新页面
+        memcpy(kva_new, kva_old, PGSIZE);
+
+        // 更新页表项，指向新页面，设置为可读写
+        *pte = page2pa(new_page) | PTE_U | PTE_W | PTE_V;
+
+        tlb_invalidate(current->mm->pgdir, fault_addr); // 刷新TLB
+        return 0; // COW错误处理成功
+    }
+
+    return -1; // 不是COW错误
+}
+
 
 static inline void trap_dispatch(struct trapframe* tf) {
     if ((intptr_t)tf->cause < 0) {

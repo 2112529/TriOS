@@ -586,6 +586,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     //    7. set ret vaule using child proc's pid
     
     ret=proc->pid;
+    if (copy_files(clone_flags, proc) != 0) goto bad_fork_cleanup_kstack;
  
 
 

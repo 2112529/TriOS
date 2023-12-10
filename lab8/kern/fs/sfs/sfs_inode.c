@@ -605,7 +605,7 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
         // else size=endpos-offset;
         size = (nblks != 0) ? (SFS_BLKSIZE - blkoff) : (endpos - offset);
         ret = sfs_bmap_load_nolock(sfs, sin, blkno, &ino);
-        if (ret < 0) {
+        if (ret != 0) {
             goto out;
         }
         // if (blkoff + nblks > size) {
@@ -615,7 +615,7 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
         //     nblks = SFS_BLKSIZE - blkoff;
         // }
         ret = sfs_buf_op(sfs, buf, size, ino, blkoff);
-        if (ret < 0) {
+        if (ret != 0) {
             goto out;
         }
         alen += size;
@@ -624,7 +624,7 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
         nblks--;
 
     }
-    if (nblks) {
+    if (nblks>0) {
         ret = sfs_bmap_load_nolock(sfs, sin, blkno, &ino);
         if (ret < 0) {
             goto out;
@@ -639,9 +639,9 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
         nblks = 0;
     }
     size = endpos % SFS_BLKSIZE;
-    if (endpos % SFS_BLKSIZE) {
+    if (endpos % SFS_BLKSIZE!=0) {
         ret = sfs_bmap_load_nolock(sfs, sin, blkno, &ino);
-        if (ret < 0) {
+        if (ret != 0) {
             goto out;
         }
         // if (endpos - offset > SFS_BLKSIZE) {
@@ -652,7 +652,7 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
         // }
         // if (nblks) {
         ret = sfs_buf_op(sfs, buf, size, ino, 0);
-        if (ret < 0) {
+        if (ret != 0) {
             goto out;
         }
         alen += size;   

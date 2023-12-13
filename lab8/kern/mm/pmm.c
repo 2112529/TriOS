@@ -356,7 +356,6 @@ static inline void page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
      *   PTE_P           0x001                   // page table/directory entry
      * flags bit : Present
      */
-     
     if (*ptep & PTE_V) {  //(1) check if this page table entry is
         struct Page *page =
             pte2page(*ptep);  //(2) find corresponding page to pte
@@ -472,7 +471,7 @@ int copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end,
             struct Page *npage = alloc_page();
             assert(page != NULL);
             assert(npage != NULL);
-            //int ret = 0;
+            int ret = 0;
             /* LAB5:EXERCISE2 YOUR CODE
              * replicate content of page to npage, build the map of phy addr of
              * nage with the linear addr start
@@ -491,7 +490,7 @@ int copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end,
              * (3) memory copy from src_kvaddr to dst_kvaddr, size is PGSIZE
              * (4) build the map of phy addr of  nage with the linear addr start
              */
-              // (1) find src_kvaddr: the kernel virtual address of page
+             // (1) find src_kvaddr: the kernel virtual address of page
             uintptr_t *src_kvaddr = page2kva(page);
 
             // (2) find dst_kvaddr: the kernel virtual address of npage
@@ -501,7 +500,7 @@ int copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end,
             memcpy(dst_kvaddr, src_kvaddr, PGSIZE);
 
             // (4) build the map of phy addr of npage with the linear addr start
-            int ret = page_insert(to, npage, start, perm);
+            ret = page_insert(to, npage, start, perm);
             if (ret != 0) {
                 free_page(npage);
                 return ret;

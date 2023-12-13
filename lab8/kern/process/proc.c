@@ -105,30 +105,6 @@ alloc_proc(void) {
      *       uint32_t flags;                             // Process flag
      *       char name[PROC_NAME_LEN + 1];               // Process name
      */
-      proc->state = PROC_UNINIT;
-    proc->pid = -1;
-    proc->runs = 0;
-    proc->kstack = 0;
-    proc->need_resched = 0;
-    proc->parent = NULL;
-    proc->mm = NULL;
-    //初始化context结构体
-    memset(&(proc->context), 0, sizeof(struct context));
-    proc->tf = NULL;
-    proc->cr3 = boot_cr3;
-    proc->flags = 0;
-    proc->wait_state = 0;
-    proc->cptr = NULL;
-    proc->yptr = NULL;
-    proc->optr = NULL;
-    proc->rq=NULL;
-    list_init(&(proc->run_link));
-    list_init(&(proc->hash_link));
-    //memset(&(proc->run_link), 0, sizeof(struct context));    
-    proc->time_slice=0;
-    proc->filesp=NULL;
-    memset(proc->name, 0, PROC_NAME_LEN+1);
-    }   
      //LAB5 YOUR CODE : (update LAB4 steps)
     /*
      * below fields(add in LAB5) in proc_struct need to be initialized
@@ -151,10 +127,33 @@ alloc_proc(void) {
      * below fields(add in LAB6) in proc_struct need to be initialized
      *       struct files_struct * filesp;                file struct point        
      */
-    
+        proc->state = PROC_UNINIT;
+    proc->pid = -1;
+    proc->runs = 0;
+    proc->kstack = 0;
+    proc->need_resched = 0;
+    proc->parent = NULL;
+    proc->mm = NULL;
+    //初始化context结构体
+    memset(&(proc->context), 0, sizeof(struct context));
+    proc->tf = NULL;
+    proc->cr3 = boot_cr3;
+    proc->flags = 0;
+    proc->wait_state = 0;
+    proc->cptr = NULL;
+    proc->yptr = NULL;
+    proc->optr = NULL;
+    proc->rq=NULL;
+    list_init(&(proc->run_link));
+    list_init(&(proc->hash_link));
+    //memset(&(proc->run_link), 0, sizeof(struct context));    
+    proc->time_slice=0;
+    proc->filesp=NULL;
+    memset(proc->name, 0, PROC_NAME_LEN+1);
+    }
     return proc;
-
 }
+
 // set_proc_name - set the name of proc
 char *
 set_proc_name(struct proc_struct *proc, const char *name) {
@@ -249,17 +248,7 @@ proc_run(struct proc_struct *proc) {
         */
 
 
-
-                // LAB4:EXERCISE3 YOUR CODE
-        /*
-        * Some Useful MACROs, Functions and DEFINEs, you can use them in below implementation.
-        * MACROs or Functions:
-        *   local_intr_save():        Disable interrupts
-        *   local_intr_restore():     Enable Interrupts
-        *   lcr3():                   Modify the value of CR3 register
-        *   switch_to():              Context switching between two processes
-        */
-       //检查要切换的进程是否与当前正在运行的进程相同，如果相同则不需要切换
+    //检查要切换的进程是否与当前正在运行的进程相同，如果相同则不需要切换
        if (proc->pid == current->pid) 
            return;
         //禁 用 中 断。 你 可 以 使 用/kern/sync/sync.h 中 定 义 好 的 宏 local_intr_save(x) 和local_intr_restore(x) 来实现关、开中断。
@@ -281,8 +270,6 @@ proc_run(struct proc_struct *proc) {
     *        MACROs or Functions:
      *       flush_tlb():          flush the tlb        
      */
-
-
 
     }
 }
@@ -427,7 +414,7 @@ copy_thread(struct proc_struct *proc, uintptr_t esp, struct trapframe *tf) {
 
     // Set a0 to 0 so a child process knows it's just forked
     proc->tf->gpr.a0 = 0;
-    proc->tf->gpr.sp = (esp == 0) ? (uintptr_t)proc->tf-4 : esp;
+    proc->tf->gpr.sp = (esp == 0) ? (uintptr_t)proc->tf - 4 : esp;
 
     proc->context.ra = (uintptr_t)forkret;
     proc->context.sp = (uintptr_t)(proc->tf);
@@ -522,74 +509,32 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
   *    update step 1: set child proc's parent to current process, make sure current process's wait_state is 0
   *    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
     */
-    //LAB4:EXERCISE2 YOUR CODE
-    /*
-     * Some Useful MACROs, Functions and DEFINEs, you can use them in below implementation.
-     * MACROs or Functions:
-     *   alloc_proc:   create a proc struct and init fields (lab4:exercise1)
-     *   setup_kstack: alloc pages with size KSTACKPAGE as process kernel stack
-     *   copy_mm:      process "proc" duplicate OR share process "current"'s mm according clone_flags
-     *                 if clone_flags & CLONE_VM, then "share" ; else "duplicate"
-     *   copy_thread:  setup the trapframe on the  process's kernel stack top and
-     *                 setup the kernel entry point and stack of process
-     *   hash_proc:    add proc into proc hash_list
-     *   get_pid:      alloc a unique pid for process
-     *   wakeup_proc:  set proc->state = PROC_RUNNABLE
-     * VARIABLES:
-     *   proc_list:    the process set's list
-     *   nr_process:   the number of process set
-     */
-
-    //    1. call alloc_proc to allocate a proc_struct
-    //    2. call setup_kstack to allocate a kernel stack for child process
-    //    3. call copy_mm to dup OR share mm according clone_flag
-    //    4. call copy_thread to setup tf & context in proc_struct
-    //    5. insert proc_struct into hash_list && proc_list
-    //    6. call wakeup_proc to make the new child process RUNNABLE
-    //    7. set ret vaule using child proc's pid
-
-    //LAB5 YOUR CODE : (update LAB4 steps)
-    //TIPS: you should modify your written code in lab4(step1 and step5), not add more code.
-   /* Some Functions
-    *    set_links:  set the relation links of process.  ALSO SEE: remove_links:  lean the relation links of process 
-    *    -------------------
-    *    update step 1: set child proc's parent to current process, make sure current process's wait_state is 0
-    *    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
-    */
-   //    1. call alloc_proc to allocate a proc_struct
-    proc=alloc_proc();
-    if(!current->wait_state==0)
-    {
-        current->wait_state=0;
+    if((proc = alloc_proc()) == NULL) {
+        goto fork_out;
     }
-    proc->parent=current;
-    proc->pid=get_pid();
-    //    2. call setup_kstack to allocate a kernel stack for child process
-    setup_kstack(proc);
-    //    3. call copy_mm to dup OR share mm according clone_flag
-    copy_mm(clone_flags,proc);
-    //    4. call copy_thread to setup tf & context in proc_struct
-    copy_thread(proc,stack,tf);
-    //    5. insert proc_struct into hash_list && proc_list
-    
+    proc->parent = current;
+    assert(current->wait_state == 0);
+    if(setup_kstack(proc) != 0) {
+        goto bad_fork_cleanup_proc;
+    }
+    if(copy_mm(clone_flags, proc) != 0) {
+        goto bad_fork_cleanup_kstack;
+    }
+    copy_thread(proc, stack, tf);
     bool intrstate;
     local_intr_save(intrstate);
-    hash_proc(proc);
-    //list_add(&proc_list,&(proc->list_link));
-    set_links(proc);
+    {
+        proc->pid = get_pid();
+        hash_proc(proc);
+        set_links(proc);
+    }
     local_intr_restore(intrstate);
-
-    
-    //nr_process++;
-    //    6. call wakeup_proc to make the new child process RUNNABLE
     wakeup_proc(proc);
-    //    7. set ret vaule using child proc's pid
-    
-    ret=proc->pid;
+    ret = proc->pid;
+
     if (copy_files(clone_flags, proc) != 0) goto bad_fork_cleanup_kstack;
- 
 
-
+   
 fork_out:
     return ret;
 
@@ -700,7 +645,7 @@ load_icode(int fd, int argc, char **kargv) {
      * (7) setup trapframe for user environment
      * (8) if up steps failed, you should cleanup the env.
      */
-     if (current->mm != NULL) {
+    if (current->mm != NULL) {
         panic("load_icode: current->mm must be empty.\n");
     }
 

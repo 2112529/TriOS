@@ -12,6 +12,7 @@
 #include <bitmap.h>
 #include <error.h>
 #include <assert.h>
+#include <stdio.h>
 
 static const struct inode_ops sfs_node_dirops;  // dir operations
 static const struct inode_ops sfs_node_fileops; // file operations
@@ -588,7 +589,7 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
     uint32_t ino;
     uint32_t blkno = offset / SFS_BLKSIZE;          // The NO. of Rd/Wr begin block
     uint32_t nblks = endpos / SFS_BLKSIZE - blkno;  // The size of Rd/Wr blocks
-    
+
   //LAB8:EXERCISE1 YOUR CODE HINT: call sfs_bmap_load_nolock, sfs_rbuf, sfs_rblock,etc. read different kind of blocks in file
 	/*
 	 * (1) If offset isn't aligned with the first block, Rd/Wr some content from offset to the end of the first block
@@ -620,6 +621,7 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
         }
         alen += size;
         buf += size;
+        if(nblks == 0)goto out;
         blkno++;
         nblks--;
 
@@ -658,8 +660,6 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
         alen += size;   
         // }
     }
-   
-
 out:
     *alenp = alen;
     if (offset + alen > sin->din->size) {

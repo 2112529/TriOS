@@ -563,6 +563,7 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
     if (offset == endpos) {
         return 0;
     }
+    // over the size
     if (endpos > SFS_MAX_FILE_SIZE) {
         endpos = SFS_MAX_FILE_SIZE;
     }
@@ -619,8 +620,8 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
         if (ret != 0) {
             goto out;
         }
-        alen += size;
-        buf += size;
+        alen += size;//real rw length
+        buf += size;//buffer rw length
         if(nblks == 0)goto out;
         blkno++;
         nblks--;
